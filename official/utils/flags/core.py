@@ -21,13 +21,42 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import functools
+import sys
+
 from absl import flags
 
 from official.utils.flags import _base
+from official.utils.flags import _conventions
 from official.utils.flags import _benchmark
 from official.utils.flags import _example
 from official.utils.flags import _misc
 from official.utils.flags import _performance
+
+
+def parse_flags(argv=None):
+  """Enforce strict checking on arg parsing."""
+  flags.FLAGS.unparse_flags()
+  try:
+    flags.FLAGS(sys.argv if argv is None else argv)
+  except flags.Error as error:
+    sys.stderr.write('FATAL Flags parsing error: %s\n' % error)
+    sys.stderr.write('Pass -h or --helpfull to see help on flags.\n')
+    sys.exit(1)
+
+
+def call_only_once(f):
+  """Prevent unittests from defining flags multiple times."""
+  setattr(f, "already_called", False)
+
+  @functools.wraps(f)
+  def wrapped_fn(*args, **kwargs):
+    if f.already_called:
+      return
+
+    f(*args, **kwargs)
+    f.already_called = True
+  return wrapped_fn
 
 
 def define_in_core(f):
@@ -56,6 +85,13 @@ define_benchmark = define_in_core(_benchmark.define_benchmark)
 define_example = define_in_core(_example.define_example)
 define_image = define_in_core(_misc.define_image)
 define_performance = define_in_core(_performance.define_performance)
+
+
+base_defaults = _base.DEFAULTS
+
+
+help_wrap = _conventions.help_wrap
+to_choices_str = _conventions.to_choices_str
 
 
 get_tf_dtype = _performance.get_tf_dtype

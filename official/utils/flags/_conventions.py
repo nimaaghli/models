@@ -24,8 +24,15 @@ from absl import app as absl_app
 from absl import flags
 
 
+# This codifies help string conventions and makes it easy to update them if
+# necessary. Currently the only major effect is that help bodies start on the
+# line after flags are listed.
 help_wrap = functools.partial(flags.text_wrap, length=80, indent="",
                               firstline_indent="\n")
+
+
+def to_choices_str(choices):
+  return "(choices: {})".format(", ".join([str(i) for i in choices]))
 
 
 class HelpOneLetter(absl_app.HelpFlag):
@@ -34,8 +41,8 @@ class HelpOneLetter(absl_app.HelpFlag):
   SHORT_NAME = None
 
 
-flags.DEFINE_flag(HelpOneLetter())
+# flags.DEFINE_flag(HelpOneLetter())
 
 
-def to_choices_str(choices):
-  return "(choices: {})".format(", ".join([str(i) for i in choices]))
+
+

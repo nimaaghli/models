@@ -52,7 +52,7 @@ def define_example(foo=True, bar=True):
         # set of style conventions for all help messages.
         help=help_wrap(
             "A flag of no particular note\n{}".format(choices_str)
-        )
+        ),
     )
 
     # By marking a flag as a key_flag, you indicate that it should appear in
@@ -93,7 +93,7 @@ def define_example(foo=True, bar=True):
             .format(to_choices_str(choices["fizz"])) +
             u"\ufeff  if --foo=bang:\n\ufeff    {}\n"
             .format(to_choices_str(choices["bang"]))
-        )
+        ),
     )
 
     # absl supports required flags.

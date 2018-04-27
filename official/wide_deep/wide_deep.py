@@ -22,11 +22,17 @@ import os
 import shutil
 import sys
 
+from absl import app as absl_app
+from absl import flags
 import tensorflow as tf  # pylint: disable=g-bad-import-order
 
-from official.utils.arg_parsers import parsers
+from official.utils.flags import core as flags_core
 from official.utils.logs import hooks_helper
 from official.utils.misc import model_helpers
+
+
+FLAGS = flags.FLAGS
+
 
 _CSV_COLUMNS = [
     'age', 'workclass', 'fnlwgt', 'education', 'education_num',
@@ -45,6 +51,29 @@ _NUM_EXAMPLES = {
 
 
 LOSS_PREFIX = {'wide': 'linear/', 'deep': 'dnn/'}
+
+
+@flags_core.call_only_once
+def define_wide_deep_flags():
+  flags_core.base_defaults.update(data_dir='/tmp/census_data',
+                                  model_dir='/tmp/census_model',
+                                  train_epochs=40,
+                                  epochs_between_evals=2,
+                                  batch_size=40)
+  flags_core.define_base()
+
+  flags.adopt_module_key_flags(flags_core)
+
+  choices=['wide', 'deep', 'wide_deep']
+  flags.DEFINE_string(
+      name="model_type", short_name="mt", default="wide_deep",
+      help="Select model topology.\n{}".format(
+          flags_core.to_choices_str(choices))
+  )
+
+  @flags.validator("model_type")
+  def _check_model_type(model_type):
+    return model_type in choices
 
 
 def build_model_columns():
@@ -197,67 +226,49 @@ def export_model(model, model_type, export_dir):
 
 
 def main(argv):
-  parser = WideDeepArgParser()
-  flags = parser.parse_args(args=argv[1:])
+  define_wide_deep_flags()
+  flags_core.parse_flags(argv=argv)
 
   # Clean up the model directory if present
-  shutil.rmtree(flags.model_dir, ignore_errors=True)
-  model = build_estimator(flags.model_dir, flags.model_type)
+  shutil.rmtree(FLAGS.model_dir, ignore_errors=True)
+  model = build_estimator(FLAGS.model_dir, FLAGS.model_type)
 
-  train_file = os.path.join(flags.data_dir, 'adult.data')
-  test_file = os.path.join(flags.data_dir, 'adult.test')
+  train_file = os.path.join(FLAGS.data_dir, 'adult.data')
+  test_file = os.path.join(FLAGS.data_dir, 'adult.test')
 
   # Train and evaluate the model every `flags.epochs_between_evals` epochs.
   def train_input_fn():
     return input_fn(
-        train_file, flags.epochs_between_evals, True, flags.batch_size)
+        train_file, FLAGS.epochs_between_evals, True, FLAGS.batch_size)
 
   def eval_input_fn():
-    return input_fn(test_file, 1, False, flags.batch_size)
+    return input_fn(test_file, 1, False, FLAGS.batch_size)
 
-  loss_prefix = LOSS_PREFIX.get(flags.model_type, '')
+  loss_prefix = LOSS_PREFIX.get(FLAGS.model_type, '')
   train_hooks = hooks_helper.get_train_hooks(
-      flags.hooks, batch_size=flags.batch_size,
+      FLAGS.hooks, batch_size=FLAGS.batch_size,
       tensors_to_log={'average_loss': loss_prefix + 'head/truediv',
                       'loss': loss_prefix + 'head/weighted_loss/Sum'})
 
   # Train and evaluate the model every `flags.epochs_between_evals` epochs.
-  for n in range(flags.train_epochs // flags.epochs_between_evals):
+  for n in range(FLAGS.train_epochs // FLAGS.epochs_between_evals):
     model.train(input_fn=train_input_fn, hooks=train_hooks)
     results = model.evaluate(input_fn=eval_input_fn)
 
     # Display evaluation metrics
-    print('Results at epoch', (n + 1) * flags.epochs_between_evals)
+    print('Results at epoch', (n + 1) * FLAGS.epochs_between_evals)
     print('-' * 60)
 
     for key in sorted(results):
       print('%s: %s' % (key, results[key]))
 
     if model_helpers.past_stop_threshold(
-        flags.stop_threshold, results['accuracy']):
+        FLAGS.stop_threshold, results['accuracy']):
       break
 
   # Export the model
-  if flags.export_dir is not None:
-    export_model(model, flags.model_type, flags.export_dir)
-
-
-class WideDeepArgParser(argparse.ArgumentParser):
-  """Argument parser for running the wide deep model."""
-
-  def __init__(self):
-    super(WideDeepArgParser, self).__init__(parents=[parsers.BaseParser()])
-    self.add_argument(
-        '--model_type', '-mt', type=str, default='wide_deep',
-        choices=['wide', 'deep', 'wide_deep'],
-        help='[default %(default)s] Valid model types: wide, deep, wide_deep.',
-        metavar='<MT>')
-    self.set_defaults(
-        data_dir='/tmp/census_data',
-        model_dir='/tmp/census_model',
-        train_epochs=40,
-        epochs_between_evals=2,
-        batch_size=40)
+  if FLAGS.export_dir is not None:
+    export_model(model, FLAGS.model_type, FLAGS.export_dir)
 
 
 if __name__ == '__main__':
