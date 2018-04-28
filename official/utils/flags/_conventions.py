@@ -22,6 +22,7 @@ import functools
 
 from absl import app as absl_app
 from absl import flags
+import tensorflow as tf
 
 
 # This codifies help string conventions and makes it easy to update them if
@@ -34,15 +35,5 @@ help_wrap = functools.partial(flags.text_wrap, length=80, indent="",
 def to_choices_str(choices):
   return "(choices: {})".format(", ".join([str(i) for i in choices]))
 
-
-class HelpOneLetter(absl_app.HelpFlag):
-  """-h is an alias for --help."""
-  NAME = "h"
-  SHORT_NAME = None
-
-
-# flags.DEFINE_flag(HelpOneLetter())
-
-
-
-
+# Replace None with h to also allow -h
+absl_app.HelpshortFlag.SHORT_NAME = "h"

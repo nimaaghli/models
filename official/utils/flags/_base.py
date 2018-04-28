@@ -24,17 +24,6 @@ from official.utils.flags._conventions import help_wrap
 from official.utils.logs import hooks_helper
 
 
-DEFAULTS = {
-    "data_dir": "/tmp",
-    "model_dir": "/tmp",
-    "train_epochs": 1,
-    "epochs_between_evals": 1,
-    "stop_threshold": None,
-    "batch_size": 32,
-    "hooks": "LoggingTensorHook",
-}
-
-
 def define_base(data_dir=True, model_dir=True, train_epochs=True,
                 epochs_between_evals=True, stop_threshold=True, batch_size=True,
                 multi_gpu=True, hooks=True, export_dir=True):
@@ -59,26 +48,25 @@ def define_base(data_dir=True, model_dir=True, train_epochs=True,
 
   if data_dir:
     flags.DEFINE_string(
-        name="data_dir", short_name="dd", default=DEFAULTS["data_dir"],
+        name="data_dir", short_name="dd", default="/tmp",
         help=help_wrap("The location of the input data."))
     key_flags.append("data_dir")
 
   if model_dir:
     flags.DEFINE_string(
-        name="model_dir", short_name="md", default=DEFAULTS["model_dir"],
+        name="model_dir", short_name="md", default="/tmp",
         help=help_wrap("The location of the model checkpoint files."))
     key_flags.append("model_dir")
 
   if train_epochs:
     flags.DEFINE_integer(
-        name="train_epochs", short_name="te", default=DEFAULTS["train_epochs"],
+        name="train_epochs", short_name="te", default=1,
         help=help_wrap("The number of epochs used to train."))
     key_flags.append("train_epochs")
 
   if epochs_between_evals:
     flags.DEFINE_integer(
-        name="epochs_between_evals", short_name="ebe",
-        default=DEFAULTS["epochs_between_evals"],
+        name="epochs_between_evals", short_name="ebe", default=1,
         help=help_wrap("The number of training epochs to run between "
                        "evaluations."))
     key_flags.append("epochs_between_evals")
@@ -86,14 +74,14 @@ def define_base(data_dir=True, model_dir=True, train_epochs=True,
   if stop_threshold:
     flags.DEFINE_float(
         name="stop_threshold", short_name="st",
-        default=DEFAULTS["stop_threshold"],
+        default=None,
         help=help_wrap("If passed, training will stop at the earlier of "
                        "train_epochs and when the evaluation metric is  "
                        "greater than or equal to stop_threshold."))
 
   if batch_size:
     flags.DEFINE_integer(
-        name="batch_size", short_name="bs", default=DEFAULTS["batch_size"],
+        name="batch_size", short_name="bs", default=32,
         help=help_wrap("Batch size for training and evaluation."))
     key_flags.append("batch_size")
 
@@ -111,7 +99,7 @@ def define_base(data_dir=True, model_dir=True, train_epochs=True,
             u"\ufeff    {}({})".format(value.ljust(pad_len), key) for key, value
             in hooks_helper.HOOKS_ALIAS.items()]))
     flags.DEFINE_list(
-        name="hooks", short_name="hk", default=DEFAULTS["hooks"],
+        name="hooks", short_name="hk", default="LoggingTensorHook",
         help=help_wrap(
             u"A comma separated list of (case insensitive) strings to specify "
             u"the names of training hooks.\n{}\n\ufeff  "

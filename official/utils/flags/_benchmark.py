@@ -59,7 +59,7 @@ def define_benchmark(benchmark_log_dir=True, bigquery_uploader=True):
                        "information will be uploaded."))
 
     flags.DEFINE_string(
-        name="bigquery_metric_table", short_name="brt",
+        name="bigquery_metric_table", short_name="bmt",
         default="benchmark_metric",
         help=help_wrap("The Bigquery table name where the benchmark metric "
                        "information will be uploaded."))

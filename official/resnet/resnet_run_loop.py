@@ -26,10 +26,11 @@ from __future__ import print_function
 import argparse
 import os
 
+from absl import flags
 import tensorflow as tf  # pylint: disable=g-bad-import-order
 
 from official.resnet import resnet_model
-from official.utils.arg_parsers import parsers
+from official.utils.flags import core as flags_core
 from official.utils.export import export
 from official.utils.logs import hooks_helper
 from official.utils.logs import logger
@@ -394,8 +395,8 @@ def resnet_main(flags, model_function, input_function, shape=None):
           'batch_size': flags.batch_size,
           'multi_gpu': flags.multi_gpu,
           'version': flags.version,
-          'loss_scale': flags.loss_scale,
-          'dtype': flags.dtype
+          'loss_scale': flags_core.get_loss_scale(),
+          'dtype': flags_core.get_tf_dtype()
       })
 
   benchmark_logger = logger.config_benchmark_logger(flags.benchmark_log_dir)
@@ -458,35 +459,33 @@ def warn_on_multi_gpu_export(multi_gpu=False):
         'try exporting the SavedModel with multi-GPU mode turned off.')
 
 
-class ResnetArgParser(argparse.ArgumentParser):
-  """Arguments for configuring and running a Resnet Model."""
+@flags_core.call_only_once
+def define_resnet_flags(resnet_size_choices=None):
+  flags_core.define_base()
+  flags_core.define_performance()
+  flags_core.define_image()
+  flags_core.define_benchmark()
+  flags.adopt_module_key_flags(flags_core)
 
-  def __init__(self, resnet_size_choices=None):
-    super(ResnetArgParser, self).__init__(parents=[
-        parsers.BaseParser(),
-        parsers.PerformanceParser(),
-        parsers.ImageModelParser(),
-        parsers.BenchmarkParser(),
-    ])
+  choices = [1, 2]
+  flags.DEFINE_integer(
+      name='version', short_name='rv', default=2,
+      help=flags_core.help_wrap(
+          'Version of ResNet. (1 or 2) See README.md for details.')
+  )
+  @flags.validator('version', message='Invalid ResNet version.')
+  def _check_version(v):
+    return v in choices
 
-    self.add_argument(
-        '--version', '-v', type=int, choices=[1, 2],
-        default=resnet_model.DEFAULT_VERSION,
-        help='Version of ResNet. (1 or 2) See README.md for details.'
-    )
+  rs_choice_str = ""
+  if resnet_size_choices is not None:
+    rs_choice_str = '\n' + flags_core.to_choices_str(resnet_size_choices)
 
-    self.add_argument(
-        '--resnet_size', '-rs', type=int, default=50,
-        choices=resnet_size_choices,
-        help='[default: %(default)s] The size of the ResNet model to use.',
-        metavar='<RS>' if resnet_size_choices is None else None
-    )
+  flags.DEFINE_integer(
+      name='resnet_size', short_name='rs', default=50,
+      help=flags_core.help_wrap('The size of the ResNet model to use.{}'
+                                .format(rs_choice_str)))
 
-  def parse_args(self, args=None, namespace=None):
-    args = super(ResnetArgParser, self).parse_args(
-        args=args, namespace=namespace)
-
-    # handle coupling between dtype and loss_scale
-    parsers.parse_dtype_info(args)
-
-    return args
+  @flags.validator('resnet_size', message='Invalid ResNet size.')
+  def _check_resnet_size(resnet_size):
+    return resnet_size_choices is None or resnet_size in resnet_size_choices

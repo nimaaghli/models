@@ -55,11 +55,6 @@ LOSS_PREFIX = {'wide': 'linear/', 'deep': 'dnn/'}
 
 @flags_core.call_only_once
 def define_wide_deep_flags():
-  flags_core.base_defaults.update(data_dir='/tmp/census_data',
-                                  model_dir='/tmp/census_model',
-                                  train_epochs=40,
-                                  epochs_between_evals=2,
-                                  batch_size=40)
   flags_core.define_base()
 
   flags.adopt_module_key_flags(flags_core)
@@ -74,6 +69,12 @@ def define_wide_deep_flags():
   @flags.validator("model_type")
   def _check_model_type(model_type):
     return model_type in choices
+
+  flags_core.set_defaults(data_dir='/tmp/census_data',
+                          model_dir='/tmp/census_model',
+                          train_epochs=40,
+                          epochs_between_evals=2,
+                          batch_size=40)
 
 
 def build_model_columns():
@@ -225,10 +226,7 @@ def export_model(model, model_type, export_dir):
   model.export_savedmodel(export_dir, example_input_fn)
 
 
-def main(argv):
-  define_wide_deep_flags()
-  flags_core.parse_flags(argv=argv)
-
+def main(_):
   # Clean up the model directory if present
   shutil.rmtree(FLAGS.model_dir, ignore_errors=True)
   model = build_estimator(FLAGS.model_dir, FLAGS.model_type)
@@ -273,4 +271,5 @@ def main(argv):
 
 if __name__ == '__main__':
   tf.logging.set_verbosity(tf.logging.INFO)
-  main(argv=sys.argv)
+  define_wide_deep_flags()
+  absl_app.run(main)

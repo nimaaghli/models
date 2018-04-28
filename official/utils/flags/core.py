@@ -34,15 +34,9 @@ from official.utils.flags import _misc
 from official.utils.flags import _performance
 
 
-def parse_flags(argv=None):
-  """Enforce strict checking on arg parsing."""
-  flags.FLAGS.unparse_flags()
-  try:
-    flags.FLAGS(sys.argv if argv is None else argv)
-  except flags.Error as error:
-    sys.stderr.write('FATAL Flags parsing error: %s\n' % error)
-    sys.stderr.write('Pass -h or --helpfull to see help on flags.\n')
-    sys.exit(1)
+def set_defaults(**kwargs):
+  for key, value in kwargs.items():
+    flags.FLAGS.set_default(name=key, value=value)
 
 
 def call_only_once(f):
@@ -51,12 +45,24 @@ def call_only_once(f):
 
   @functools.wraps(f)
   def wrapped_fn(*args, **kwargs):
+    print(f.already_called)
     if f.already_called:
       return
 
     f(*args, **kwargs)
-    f.already_called = True
+    setattr(f, "already_called", True)
   return wrapped_fn
+
+
+def parse_flags(argv=None):
+  """Reset flags and reparse. Only used by utils.testing.integration"""
+  flags.FLAGS.unparse_flags()
+  try:
+    flags.FLAGS(sys.argv if argv is None else argv)
+  except flags.Error as error:
+    sys.stderr.write('FATAL Flags parsing error: %s\n' % error)
+    sys.stderr.write('Pass -h or --helpfull to see help on flags.\n')
+    sys.exit(1)
 
 
 def define_in_core(f):
@@ -85,9 +91,6 @@ define_benchmark = define_in_core(_benchmark.define_benchmark)
 define_example = define_in_core(_example.define_example)
 define_image = define_in_core(_misc.define_image)
 define_performance = define_in_core(_performance.define_performance)
-
-
-base_defaults = _base.DEFAULTS
 
 
 help_wrap = _conventions.help_wrap
