@@ -87,6 +87,10 @@ def define_in_core(f):
 
 
 define_base = define_in_core(_base.define_base)
+# Remove options not relevant for Eager from define_base().
+define_base_eager = define_in_core(functools.partial(
+    _base.define_base, epochs_between_evals=False, stop_threshold=False,
+    multi_gpu=False, hooks=False))
 define_benchmark = define_in_core(_benchmark.define_benchmark)
 define_example = define_in_core(_example.define_example)
 define_image = define_in_core(_misc.define_image)
