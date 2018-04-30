@@ -163,6 +163,7 @@ def main(_):
 
 @flags_core.call_only_once
 def define_mnist_eager_flags():
+  """Defined flags and defaults for MNIST in eager mode."""
   flags_core.define_base_eager()
   flags_core.define_image()
   flags.adopt_module_key_flags(flags_core)
