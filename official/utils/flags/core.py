@@ -55,7 +55,7 @@ def call_only_once(f):
 
 
 def parse_flags(argv=None):
-  """Reset flags and reparse. Only used by utils.testing.integration."""
+  """Reset flags and reparse. Currently only used in testing."""
   flags.FLAGS.unparse_flags()
   try:
     flags.FLAGS(sys.argv if argv is None else argv)
