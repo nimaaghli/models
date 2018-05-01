@@ -12,8 +12,6 @@ import matplotlib.pyplot as plt
 from PIL import Image
 
 
-
-
 from utils import label_map_util
 from utils import visualization_utils as vis_util
 # What model to download.
