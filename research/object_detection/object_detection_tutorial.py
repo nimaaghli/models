@@ -113,7 +113,6 @@ def run_inference_for_single_image(image, graph):
 
 
 
-
 for image_path in TEST_IMAGE_PATHS:
   image = Image.open(image_path)
   # the array based representation of the image will be used later in order to prepare the
